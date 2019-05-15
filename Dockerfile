@@ -35,7 +35,7 @@ USER docker:docker
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
     && ~/.cargo/bin/rustup target add armv7-unknown-linux-gnueabihf \
     && rm -rf ~/.rustup/toolchains/stable-$(uname -m)-unknown-linux-gnu/share \
-    && cargo install cargo-deb
+    && cargo install cargo-deb cargo-prune cargo-cache
 
 COPY build/build-boss-deb-package /usr/local/bin/
 

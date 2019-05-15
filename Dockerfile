@@ -12,7 +12,6 @@ ENV PATH $CC_DIR:$PATH:/home/docker/.cargo/bin
 
 COPY build/arm-linux-gnueabihf-gcc-with-link-search /usr/local/bin/
 COPY build/arm-linux-gnueabihf-g++-with-link-search /usr/local/bin/
-COPY build/build-boss-deb-package /usr/local/bin/
 
 RUN dpkg --add-architecture armhf \
     && apt-get update \
@@ -37,6 +36,8 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
     && ~/.cargo/bin/rustup target add armv7-unknown-linux-gnueabihf \
     && rm -rf ~/.rustup/toolchains/stable-$(uname -m)-unknown-linux-gnu/share \
     && cargo install cargo-deb
+
+COPY build/build-boss-deb-package /usr/local/bin/
 
 WORKDIR /usr/src/app
 

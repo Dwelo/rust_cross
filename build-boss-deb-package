@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Builds a deb package of boss for armhf.
-# Must be run from the root for the repo, inside the builder container.
+# Must be run from the root of the repo, inside the builder container.
+
+set -euo pipefail
+
+# Append .BOSS_GIT_VERSION (e.g. ".master-0123abc") to the package version in Cargo.toml
+sed -ie "s/^\(version = \".*\)\"\$/\1.$BOSS_GIT_VERSION\"/" Cargo.toml
 
 cargo fetch --target=armv7-unknown-linux-gnueabihf --locked
 

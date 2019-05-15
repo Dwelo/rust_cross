@@ -4,8 +4,8 @@
 
 set -euo pipefail
 
-# Append .BOSS_GIT_VERSION (e.g. ".master-0123abc") to the package version in Cargo.toml
-sed -ie "s/^\(version = \".*\)\"\$/\1.$BOSS_GIT_VERSION\"/" Cargo.toml
+# Append -BOSS_GIT_VERSION (e.g. "-master-0123abc") to the package version in Cargo.toml
+sed -ie "s/^\(version = \".*\)\"\$/\1-$BOSS_GIT_VERSION\"/" Cargo.toml
 
 cargo fetch --target=armv7-unknown-linux-gnueabihf --locked
 
@@ -14,3 +14,6 @@ cp -f $(find ${HOME}/.cargo/git/checkouts/zware_rs* -iname zwave_device_rec.txt 
 cargo deb --target=armv7-unknown-linux-gnueabihf --no-strip -- --locked --all-features
 
 rm -f ./zwave_device_rec.txt
+
+# Write the boss version string out to a file that we can eventually copy into the balena-boss-runtime repo
+echo $(awk -F "=" '/^version/ {print $2}' Cargo.toml | tr -d '"' | tr -d ' ') > target/armv7-unknown-linux-gnueabihf/debian/boss_package_version.txt

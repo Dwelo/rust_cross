@@ -10,8 +10,9 @@ ENV OBJCOPY $CC_DIR/arm-linux-gnueabihf-objcopy
 ENV PKG_CONFIG_ALLOW_CROSS 1
 ENV PATH $CC_DIR:$PATH:/home/docker/.cargo/bin
 
-COPY build/arm-linux-gnueabihf-gcc-with-link-search /usr/local/sbin/
-COPY build/arm-linux-gnueabihf-g++-with-link-search /usr/local/sbin/
+COPY build/arm-linux-gnueabihf-gcc-with-link-search /usr/local/bin/
+COPY build/arm-linux-gnueabihf-g++-with-link-search /usr/local/bin/
+COPY build/build-boss-deb-package /usr/local/bin/
 
 RUN dpkg --add-architecture armhf \
     && apt-get update \
@@ -34,7 +35,8 @@ USER docker:docker
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
     && ~/.cargo/bin/rustup target add armv7-unknown-linux-gnueabihf \
-    && rm -rf ~/.rustup/toolchains/stable-$(uname -m)-unknown-linux-gnu/share
+    && rm -rf ~/.rustup/toolchains/stable-$(uname -m)-unknown-linux-gnu/share \
+    && cargo install cargo-deb
 
 WORKDIR /usr/src/app
 

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Builds a deb package of boss for armhf.
+# Must be run from the root for the repo, inside the builder container.
+
+cargo fetch --target=armv7-unknown-linux-gnueabihf --locked
+
+cp -f $(find ${HOME}/.cargo/git/checkouts/zware_rs* -iname zwave_device_rec.txt | head -n1) ./zwave_device_rec.txt
+
+cargo deb --target=armv7-unknown-linux-gnueabihf --no-strip -- --locked --all-features
+
+rm -f ./zwave_device_rec.txt

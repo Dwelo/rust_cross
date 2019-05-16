@@ -4,8 +4,11 @@
 
 set -euo pipefail
 
-# Append -BOSS_GIT_VERSION (e.g. "-master-0123abc") to the package version in Cargo.toml
-sed -ie "s/^\(version = \".*\)\"\$/\1-$BOSS_GIT_VERSION\"/" Cargo.toml
+# Take a backup of Cargo.toml 'cause we're gonna mess with the package version string.
+cp Cargo.toml Cargo.toml.backup
+
+# Append +BOSS_GIT_VERSION (e.g. "+master-0123abc") to the package version in Cargo.toml
+sed -i "s/^\(version = \".*\)\"\$/\1+$BOSS_GIT_VERSION\"/" Cargo.toml
 
 # Fetch crates so that we have a zware_rs crate available before the build
 cargo fetch --target=armv7-unknown-linux-gnueabihf
@@ -21,3 +24,6 @@ rm -f ./zwave_device_rec.txt
 
 # Write the boss version string out to a file that we can eventually copy into the balena-boss-runtime repo
 echo $(awk -F "=" '/^version/ {print $2}' Cargo.toml | tr -d '"' | tr -d ' ') > target/armv7-unknown-linux-gnueabihf/debian/boss_package_version.txt
+
+# Replace the original Cargo.toml so we don't dirty up the repo (irrelevant on Travis but polite for local testing)
+mv Cargo.toml.backup Cargo.toml

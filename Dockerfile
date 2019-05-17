@@ -49,6 +49,6 @@ COPY build/build-boss-deb-package /usr/local/bin/
 
 WORKDIR /usr/src/app
 
-ENTRYPOINT ["fixuid"]
+ENTRYPOINT ["fixuid", "-q"]
 
 CMD ["cargo"]

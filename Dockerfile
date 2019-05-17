@@ -31,6 +31,12 @@ RUN if [[ $(uname -m) == 'x86_64' ]]; then export TOOLCHAIN_SUFFIX='-x64'; fi \
 
 SHELL ["/bin/sh", "-c"]
 
+RUN curl -SsL https://github.com/boxboat/fixuid/releases/download/v0.4/fixuid-0.4-linux-amd64.tar.gz | tar -C /usr/local/bin -xzf - && \
+    chown root:root /usr/local/bin/fixuid && \
+    chmod 4755 /usr/local/bin/fixuid && \
+    mkdir -p /etc/fixuid && \
+    printf "user: docker\ngroup: docker\n" > /etc/fixuid/config.yml
+
 USER docker:docker
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
@@ -42,5 +48,7 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
 COPY build/build-boss-deb-package /usr/local/bin/
 
 WORKDIR /usr/src/app
+
+ENTRYPOINT ["fixuid"]
 
 CMD ["cargo"]

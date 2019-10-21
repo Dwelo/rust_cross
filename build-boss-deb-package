@@ -9,6 +9,7 @@ boss_version=$(awk -F "=" '/^version/ {print $2}' Cargo.toml | tr -d '"' | tr -d
 
 # Append +BOSS_GIT_VERSION (e.g. "+master-0123abc") to the Cargo.toml version
 boss_package_version="${boss_version}+${BOSS_GIT_VERSION}"
+echo "boss_package_version: ${boss_package_version}"
 
 # Fetch crates so that we have a zware_rs crate available before the build
 cargo fetch --target=armv7-unknown-linux-gnueabihf --locked

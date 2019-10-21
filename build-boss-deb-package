@@ -4,23 +4,11 @@
 
 set -euo pipefail
 
-# Take a backup of Cargo.toml and Cargo.lock 'cause we're gonna mess with the package version string.
-cp Cargo.toml Cargo.toml.backup
-cp Cargo.lock Cargo.lock.backup
-
 # get the version string from Cargo.toml
 boss_version=$(awk -F "=" '/^version/ {print $2}' Cargo.toml | tr -d '"' | tr -d ' ')
 
 # Append +BOSS_GIT_VERSION (e.g. "+master-0123abc") to the Cargo.toml version
 boss_package_version="${boss_version}+${BOSS_GIT_VERSION}"
-
-# Find the line numbers that contain the boss version string
-toml_line_number=$(awk '/name = "boss"/{print NR+1}' Cargo.toml)
-lock_line_number=$(awk '/name = "boss"/{print NR+1}' Cargo.lock)
-
-# Now replace the "version" lines with our updated package version
-sed -i "${toml_line_number}s:.*:version = \"${boss_package_version}\":" Cargo.toml
-sed -i "${lock_line_number}s:.*:version = \"${boss_package_version}\":" Cargo.lock
 
 # Fetch crates so that we have a zware_rs crate available before the build
 cargo fetch --target=armv7-unknown-linux-gnueabihf --locked
@@ -29,14 +17,10 @@ cargo fetch --target=armv7-unknown-linux-gnueabihf --locked
 cp -f $(find ${HOME}/.cargo/git/checkouts/zware_rs* -iname zwave_device_rec.txt | head -n1) ./zwave_device_rec.txt
 
 # Make the deb!
-cargo deb --target=armv7-unknown-linux-gnueabihf --no-strip -- --locked --all-features
+cargo deb --deb-version="${boss_package_version}" --target=armv7-unknown-linux-gnueabihf --no-strip -- --locked --all-features
 
 # Cleanliness is valued.
 rm -f ./zwave_device_rec.txt
 
 # Write the boss version string out to a file that we can eventually copy into the balena-boss-runtime repo
-echo $(awk -F "=" '/^version/ {print $2}' Cargo.toml | tr -d '"' | tr -d ' ') > target/armv7-unknown-linux-gnueabihf/debian/boss_package_version.txt
-
-# Replace the original Cargo files so we don't dirty up the repo (irrelevant on Travis but polite for local testing)
-mv Cargo.toml.backup Cargo.toml
-mv Cargo.lock.backup Cargo.lock
+echo "${boss_package_version}" > target/armv7-unknown-linux-gnueabihf/debian/boss_package_version.txt

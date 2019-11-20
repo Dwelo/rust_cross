@@ -11,7 +11,7 @@ boss_version=$(awk -F "=" '/^version/ {print $2}' Cargo.toml | tr -d '"' | tr -d
 boss_package_version="${boss_version}+${BOSS_GIT_VERSION}"
 
 # Extract the latest 'zwave_device_rec.txt' from the zware_rs crate so we can ship it in the deb.
-zwave_rec_path=$(find ${HOME}/cargo/git/checkouts/zware_rs* -iname zwave_device_rec.txt | head -n1)
+zwave_rec_path=$(find ${HOME}/.cargo/git/checkouts/zware_rs* -iname zwave_device_rec.txt | head -n1)
 
 rm -rf deploy
 mkdir -p deploy

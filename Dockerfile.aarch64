@@ -125,19 +125,8 @@ RUN curl https://sh.rustup.rs -sSf | \
     rustup target add ${RUST_TARGET} && \
     cargo install cargo-prune cargo-cache && \
     rm -rf ~/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/share
-# libcompiler_builtins~~~.rlib for some reason defines strong symbols that are in libgcc.a, so we
-# are going to remove them surgically. This is terrible.
-    # find /home/rust/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/armv7-unknown-linux-musleabihf/lib/ \
-    #     -name "libcompiler_builtins-*.rlib" \
-    #     -execdir \
-    #         arm-linux-musleabihf-objcopy \
-    #         --strip-symbol=__sync_fetch_and_add_4 \
-    #         --strip-symbol=__sync_fetch_and_sub_4 \
-    #         {} {}_backup \; \
-    #     -execdir \
-    #         mv -f {}_backup {} \;
 
-ADD cargo-config.toml /home/rust/.cargo/config
+COPY cargo-config.toml.aarch64 /home/rust/.cargo/config/cargo-config.toml
 
 # Expect our source code to live in /home/rust/src.  We'll run the build as
 # user `rust`, which will be uid 1000, gid 1000 outside the container.

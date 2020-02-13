@@ -1,0 +1,11 @@
+[build]
+# Target musl by default when running Cargo.
+target = "aarch64-unknown-linux-musl"
+
+[target.armv7-unknown-linux-musleabihf]
+linker = "arm-linux-musleabihf-gcc"
+ar = "arm-linux-musleabihf-ar"
+
+[target.aarch64-unknown-linux-musl]
+linker = "aarch64-linux-musl-gcc"
+ar = "aarch64-linux-musl-ar"

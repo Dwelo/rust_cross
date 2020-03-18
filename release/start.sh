@@ -1,12 +1,6 @@
 #!/bin/sh
 set -eu
 
-# In lieu of a proper way to configure containers to not start on default. The shit that is Z-Wave just oozes into all the crevices
-if [ -n "${START_ZWARE}" ] && [ "${START_ZWARE}" != "0" ]; then
-  echo "Z-Ware enabled, supressing boss. To disable, find your device and undefine START_ZWARE in the balena dashboard under the "DEVICE VARIABLES". Going to sleep: Zzzzzz....."
-  sleep infinity
-fi
-
 mkdir -p /root/.local/share
 ln -sf /data/boss/zware /root/.local/share/zware
 

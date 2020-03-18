@@ -15,6 +15,4 @@ COPY build/boss_${RUST_TARGET} /usr/bin/boss
 COPY build/zwave_device_rec.txt /root/.config/zware/zwave_device_rec.txt
 COPY build/release/start.sh /usr/local/bin/start.sh
 
-ENV START_ZWARE=0
-
 CMD ["/usr/local/bin/start.sh"]

@@ -12,4 +12,5 @@ sleep 10
 
 echo "Starting boss"
 CURRENT_PREFIX=$(ip a show dev eth0 | sed -n 's/^.*inet \([[:digit:]]\+\.[[:digit:]]\+\).*$/\1/p')
-exec boss twilio zwave -g ${CURRENT_PREFIX}.0.32 | /usr/bin/tee -a /logs/boss/boss.log
+COMMANDER_NAME="${BOSS_COMMANDER_NAME:-twilio}"
+exec boss "${COMMANDER_NAME}" zwave -g ${CURRENT_PREFIX}.0.32 | /usr/bin/tee -a /logs/boss/boss.log

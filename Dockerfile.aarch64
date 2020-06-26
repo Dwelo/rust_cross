@@ -62,7 +62,7 @@ RUN mkdir -p /home/rust/src
 
 RUN sudo apt-get update && \
     sudo apt-get install -y --no-install-recommends \
-        build-essential \
+        build-essential autoconf automake libtool \
         ca-certificates \
         curl \
         git \
@@ -70,7 +70,7 @@ RUN sudo apt-get update && \
         ssh \
         qemu-user-static \
         && \
-    apt-get source libssl1.1 zlib1g && rm -rf ~/*.tar.gz ~/*.tar.xz ~/*.asc ~/*.dsc \
+    apt-get source libssl1.1 zlib1g expat dbus && rm -rf ~/*.tar.gz ~/*.tar.xz ~/*.asc ~/*.dsc \
     sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/*
 
 # Set up our path with all our binary directories, including those for the
@@ -104,13 +104,30 @@ RUN echo "Building OpenSSL" && \
     sudo make install_sw && \
     rm -r ~/openssl-1.1.1?
 
+RUN echo "Building expat" && \
+    cd ~/expat*/expat/ && \
+    ./buildconf.sh && \
+    ./configure --host=${TARGET_TRIPLE} --enable-static --prefix=/usr/local/${TARGET_TRIPLE}  && \
+    cd lib/ && make -j && sudo make install && \
+    cd .. && sudo make install-pkgconfigDATA && \
+    rm -r ~/expat*/
+
+ENV PKG_CONFIG_PATH_CROSS=/usr/local/${TARGET_TRIPLE}/lib/pkgconfig
+
+RUN echo "Building dbus" && \
+    cd ~/dbus*/ && \
+    PKG_CONFIG_PATH=${PKG_CONFIG_PATH_CROSS} CHOST=${TARGET_TRIPLE} \
+        ./configure --host=${TARGET_TRIPLE} --enable-static --prefix=/usr/local/${TARGET_TRIPLE} && \
+    make -j && sudo make install && \
+    rm -r ~/dbus*/
+
 ENV OPENSSL_DIR=/usr/local/${TARGET_TRIPLE}/ \
     OPENSSL_INCLUDE_DIR=/usr/local/${TARGET_TRIPLE}/include/ \
     DEP_OPENSSL_INCLUDE=/usr/local/${TARGET_TRIPLE}/include/ \
     OPENSSL_LIB_DIR=/usr/local/${TARGET_TRIPLE}/lib/ \
     OPENSSL_STATIC=1 \
     PKG_CONFIG_ALLOW_CROSS=true \
-    PKG_CONFIG_PATH_${RUST_TARGET}=/usr/local/${TARGET_TRIPLE}/lib/pkgconfig \
+    PKG_CONFIG_PATH_${RUST_TARGET}=${PKG_CONFIG_PATH_CROSS} \
     PKG_CONFIG_ALL_STATIC=true \
     LIBZ_SYS_STATIC=1 \
     RUSTFLAGS="-C link_arg=-lgcc"

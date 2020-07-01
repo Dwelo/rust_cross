@@ -11,18 +11,25 @@
 # - Use OpenSSL 1.1, because that's what's in both Alpine and Debian
 # - No mdbook
 
+ARG TARGET_ARCH
+
 # Use Debian "buster" as our base image.
-FROM debian:buster-slim
-
-# The Rust toolchain to use when building our image.  Set by `hooks/build`.
-ARG TOOLCHAIN=stable
-
-ARG TARGET_ARCH=aarch64
-ARG TARGET_TRIPLE=aarch64-linux-musl
-ARG RUST_TARGET=aarch64-unknown-linux-musl
-
+FROM debian:buster-slim as target_aarch64
+ONBUILD ENV TARGET_ARCH=aarch64 \
+            TARGET_TRIPLE=aarch64-linux-musl \
+            RUST_TARGET=aarch64-unknown-linux-musl \
 # This needs to match the output of `openssl version -p` in Alpine
-ARG OPENSSL_PLATFORM=linux-aarch64
+            OPENSSL_PLATFORM=linux-aarch64
+
+FROM debian:buster-slim as target_armhf
+ONBUILD ENV TARGET_ARCH=armhf \
+            TARGET_TRIPLE=arm-linux-musleabihf \
+            RUST_TARGET=armv7-unknown-linux-musleabihf \
+            OPENSSL_PLATFORM=linux-armv4
+
+FROM target_${TARGET_ARCH} as base
+
+FROM base as build1
 
 # Make sure we have basic dev tools for building C libraries.  Our goal
 # here is to support the musl-libc builds and Cargo builds needed for a
@@ -106,11 +113,13 @@ ENV OPENSSL_DIR=/usr/local/${TARGET_TRIPLE}/ \
     PKG_CONFIG_PATH_${RUST_TARGET}=${PKG_CONFIG_PATH_CROSS} \
     PKG_CONFIG_ALL_STATIC=true \
     LIBZ_SYS_STATIC=1 \
-    RUSTFLAGS="-C link_arg=-lgcc -C link_arg=-lc"
+    RUSTFLAGS="-Clink-arg=-Wl,-Bstatic -Clink-arg=-lgcc -Clink-arg=-lc"
 
 RUN useradd rust --user-group --create-home --shell /bin/bash
 USER rust
 WORKDIR /home/rust
+
+ARG TOOLCHAIN=stable
 
 # Install our Rust toolchain and the `musl` target.  We patch the
 # command-line we pass to the installer so that it won't attempt to
@@ -121,23 +130,26 @@ RUN curl https://sh.rustup.rs -sSf | \
     sh -s -- -y --default-toolchain ${TOOLCHAIN} && \
     rustup target add ${RUST_TARGET} && \
     cargo install cargo-prune cargo-cache && \
-    rm -rf ~/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/share ~/.cargo/registry
+    rm -rf ~/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/share ~/.cargo/registry && \
+    if [ "${TARGET_ARCH}" = armhf ]; then \
+# libcompiler_builtins~~~.rlib for some reason defines strong symbols that are in libgcc.a, so we
+# are going to remove them surgically. This is terrible.
+        find /home/rust/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/armv7-unknown-linux-musleabihf/lib/ \
+            -name "libcompiler_builtins-*.rlib" \
+            -execdir \
+                arm-linux-musleabihf-objcopy \
+                --strip-symbol=__sync_fetch_and_add_4 \
+                --strip-symbol=__sync_fetch_and_sub_4 \
+                {} {}_backup \; \
+            -execdir \
+                mv -f {}_backup {} \; ; \
+    fi
 
-COPY cargo-config.toml.aarch64 /home/rust/.cargo/config
+COPY cargo-config.toml.${TARGET_ARCH} /home/rust/.cargo/config
 
 
 # Copy artifacts from first build
-FROM debian:buster-slim
-
-# The Rust toolchain to use when building our image.  Set by `hooks/build`.
-ARG TOOLCHAIN=stable
-
-ARG TARGET_ARCH=aarch64
-ARG TARGET_TRIPLE=aarch64-linux-musl
-ARG RUST_TARGET=aarch64-unknown-linux-musl
-
-# This needs to match the output of `openssl version -p` in Alpine
-ARG OPENSSL_PLATFORM=linux-aarch64
+FROM base
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -152,7 +164,7 @@ RUN apt-get update && \
         && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-COPY --from=0 /usr/local /usr/local
+COPY --from=build1 /usr/local /usr/local
 # We have to do this fixuid chown mangling here, because of a bug in Docker:
 # https://github.com/moby/moby/issues/37830
 ADD fixuid/fixuid /usr/local/bin/
@@ -180,8 +192,8 @@ ADD sudoers /etc/sudoers.d/nopasswd
 # as the appropriate user.
 USER rust
 
-COPY --from=0 --chown=1000:1000 /home/rust/.cargo /home/rust/.cargo
-COPY --from=0 --chown=1000:1000 /home/rust/.rustup /home/rust/.rustup
+COPY --from=build1 --chown=1000:1000 /home/rust/.cargo /home/rust/.cargo
+COPY --from=build1 --chown=1000:1000 /home/rust/.rustup /home/rust/.rustup
 
 # Set up our path with all our binary directories, including those for the
 # musl-gcc toolchain and for our Rust toolchain.
@@ -195,7 +207,7 @@ ENV OPENSSL_DIR=/usr/local/${TARGET_TRIPLE}/ \
     PKG_CONFIG_PATH_${RUST_TARGET}=/usr/local/${TARGET_TRIPLE}/lib/pkgconfig \
     PKG_CONFIG_ALL_STATIC=true \
     LIBZ_SYS_STATIC=1 \
-    RUSTFLAGS="-C link_arg=-lgcc -C link_arg=-lc"
+    RUSTFLAGS="-Clink-arg=-Wl,-Bstatic -Clink-arg=-lgcc -Clink-arg=-lc"
 
 RUN mkdir -p /home/rust/src
 WORKDIR /home/rust/src

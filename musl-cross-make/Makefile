@@ -100,7 +100,7 @@ musl-git-%:
 %: $(SOURCES)/%.tar.gz | $(SOURCES)/config.sub
 	rm -rf $@.tmp
 	mkdir $@.tmp
-	( cd $@.tmp && tar zxvf - ) < $<
+	( cd $@.tmp && tar zxf - ) < $<
 	test ! -d patches/$@ || cat patches/$@/* | ( cd $@.tmp/$@ && patch -p1 )
 	test ! -f $@.tmp/$@/config.sub || cp -f $(SOURCES)/config.sub $@.tmp/$@
 	rm -rf $@
@@ -111,7 +111,7 @@ musl-git-%:
 %: $(SOURCES)/%.tar.bz2 | $(SOURCES)/config.sub
 	rm -rf $@.tmp
 	mkdir $@.tmp
-	( cd $@.tmp && tar jxvf - ) < $<
+	( cd $@.tmp && tar jxf - ) < $<
 	test ! -d patches/$@ || cat patches/$@/* | ( cd $@.tmp/$@ && patch -p1 )
 	test ! -f $@.tmp/$@/config.sub || cp -f $(SOURCES)/config.sub $@.tmp/$@
 	rm -rf $@
@@ -122,7 +122,7 @@ musl-git-%:
 %: $(SOURCES)/%.tar.xz | $(SOURCES)/config.sub
 	rm -rf $@.tmp
 	mkdir $@.tmp
-	( cd $@.tmp && tar Jxvf - ) < $<
+	( cd $@.tmp && tar Jxf - ) < $<
 	test ! -d patches/$@ || cat patches/$@/* | ( cd $@.tmp/$@ && patch -p1 )
 	test ! -f $@.tmp/$@/config.sub || cp -f $(SOURCES)/config.sub $@.tmp/$@
 	rm -rf $@

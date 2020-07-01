@@ -27,7 +27,7 @@ before_install:
 
 script:
   - echo "$DOCKER_PASSWORD" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-  - docker build -t dwelo2/rust-musl-crosscompiler:${TARGET_ARCH} --build-arg TARGET_ARCH=${TARGET_ARCH} .
+  - docker build --no-cache --pull -t dwelo2/rust-musl-crosscompiler:${TARGET_ARCH} --build-arg TARGET_ARCH=${TARGET_ARCH} .
 
 # after_script:
 #   - docker push dwelo2/rust-musl-crosscompiler:${TARGET_ARCH}

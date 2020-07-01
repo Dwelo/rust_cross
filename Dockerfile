@@ -61,15 +61,17 @@ RUN apt-get update && \
 ENV PATH=/home/rust/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 COPY musl-cross-make /root/musl-cross-make/
-RUN cd ~/musl-cross-make && \
-    TARGET=${TARGET_TRIPLE} make -j8 && \
+RUN echo "Building cross-gcc" && \
+    cd ~/musl-cross-make && \
+    TARGET=${TARGET_TRIPLE} make -j8 >/dev/null && \
     TARGET=${TARGET_TRIPLE} make install && \
     rm -r ~/musl-cross-make /usr/local/share/man/*
 
 RUN echo "Building zlib" && \
     cd ~/zlib-1.2.11.dfsg && \
-    CHOST=${TARGET_TRIPLE} ./configure --static --prefix=/usr/local/${TARGET_TRIPLE} && \
-    make -j && make install && \
+    CHOST=${TARGET_TRIPLE} ./configure --static --prefix=/usr/local/${TARGET_TRIPLE} >/dev/null && \
+    make -j >/dev/null && \
+    make install && \
     rm -r ~/zlib-1.2.11.dfsg
 
 # Build a musl-linked library version of OpenSSL using musl-libc.  This is needed by
@@ -82,16 +84,18 @@ RUN echo "Building zlib" && \
 RUN echo "Building OpenSSL" && \
     cd ~/openssl-1.1.1?/ && \
     ./Configure -fPIC --cross-compile-prefix=${TARGET_TRIPLE}- \
-      --prefix=/usr/local/${TARGET_TRIPLE} -DOPENSSL_NO_SECURE_MEMORY ${OPENSSL_PLATFORM} no-shared no-zlib && \
-    make -j8 && \
+      --prefix=/usr/local/${TARGET_TRIPLE} -DOPENSSL_NO_SECURE_MEMORY ${OPENSSL_PLATFORM} no-shared no-zlib >/dev/null && \
+    make -j8 >/dev/null && \
     make install_sw && \
     rm -r ~/openssl-1.1.1?
 
 RUN echo "Building expat" && \
     cd ~/expat*/expat/ && \
-    ./buildconf.sh && \
-    ./configure --host=${TARGET_TRIPLE} --enable-static --disable-shared --prefix=/usr/local/${TARGET_TRIPLE} && \
-    cd lib/ && make -j && make install && \
+    ./buildconf.sh >/dev/null && \
+    ./configure --host=${TARGET_TRIPLE} --enable-static --disable-shared --prefix=/usr/local/${TARGET_TRIPLE} >/dev/null && \
+    cd lib/ && \
+    make -j >/dev/null && \
+    make install && \
     cd .. && make install-pkgconfigDATA && \
     rm -r ~/expat*/
 
@@ -100,8 +104,9 @@ ENV PKG_CONFIG_PATH_CROSS=/usr/local/${TARGET_TRIPLE}/lib/pkgconfig
 RUN echo "Building dbus" && \
     cd ~/dbus*/ && \
     PKG_CONFIG_PATH=${PKG_CONFIG_PATH_CROSS} \
-        ./configure --host=${TARGET_TRIPLE} --enable-static --disable-shared --prefix=/usr/local/${TARGET_TRIPLE} && \
-    make -j && make install && \
+        ./configure --host=${TARGET_TRIPLE} --enable-static --disable-shared --prefix=/usr/local/${TARGET_TRIPLE} >/dev/null && \
+    make -j >/dev/null && \
+    make install && \
     rm -r ~/dbus*/
 
 ENV OPENSSL_DIR=/usr/local/${TARGET_TRIPLE}/ \

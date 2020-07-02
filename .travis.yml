@@ -25,8 +25,7 @@ before_install:
   - export GIT_SHA=$(git rev-parse --short $TRAVIS_BRANCH)
 
 script:
-  - echo "$DOCKER_PASSWORD" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-  - travis_wait 60 docker build --no-cache --pull -t dwelo2/rust-musl-crosscompiler:${TARGET_ARCH} --build-arg TARGET_ARCH=${TARGET_ARCH} .
+  - echo "$DOCKER_PASSWORD" | docker login -u "${DOCKER_USERNAME}" --password-stdin && travis_wait 60 docker build --no-cache --pull -t dwelo2/rust-musl-crosscompiler:${TARGET_ARCH} --build-arg TARGET_ARCH=${TARGET_ARCH} .
 
-# after_script:
-#   - docker push dwelo2/rust-musl-crosscompiler:${TARGET_ARCH}
+after_success:
+  - if [ "$TRAVIS_BRANCH" == "master" ]; then docker push dwelo2/rust-musl-crosscompiler:${TARGET_ARCH}; fi

@@ -34,7 +34,7 @@ OUTPUT = /usr/local
 
 # BINUTILS_VER = 2.32
 # GCC_VER = 8.3.0
-# MUSL_VER = 1.1.22
+MUSL_VER = 1.1.22
 # GMP_VER = 6.1.2
 # MPC_VER = 1.1.0
 # MPFR_VER = 4.0.2
@@ -62,6 +62,7 @@ DL_CMD = curl -C - -s -L -o
 
 COMMON_CONFIG += --disable-nls
 GCC_CONFIG += --enable-languages=c,c++
+GCC_CONFIG += --disable-libitm
 GCC_CONFIG += --disable-libquadmath --disable-decimal-float
 GCC_CONFIG += --disable-multilib
 

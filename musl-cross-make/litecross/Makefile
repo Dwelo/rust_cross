@@ -53,7 +53,7 @@ endif
 
 MAKE += MULTILIB_OSDIRNAMES=
 MAKE += INFO_DEPS= infodir=
-MAKE += ac_cv_prog_lex_root=lex.yy.c
+MAKE += ac_cv_prog_lex_root=lex.yy
 MAKE += MAKEINFO=false
 
 FULL_BINUTILS_CONFIG = \
@@ -68,18 +68,17 @@ FULL_BINUTILS_CONFIG = \
 FULL_GCC_CONFIG = --enable-languages=c,c++ \
 	$(GCC_CONFIG_FOR_TARGET) \
 	$(COMMON_CONFIG) $(GCC_CONFIG) $(TOOLCHAIN_CONFIG) \
+	--disable-bootstrap \
+	--disable-assembly \
 	--disable-werror \
 	--target=$(TARGET) --prefix= \
 	--libdir=/lib --disable-multilib \
 	--with-sysroot=$(SYSROOT) \
 	--enable-tls \
-	--enable-shared \
-	--enable-threads \
 	--disable-libmudflap --disable-libsanitizer \
 	--disable-gnu-indirect-function \
 	--disable-libmpx \
-	--disable-libitm \
-	--enable-libstdcxx-time
+	--enable-libstdcxx-time=rt
 
 FULL_MUSL_CONFIG = $(MUSL_CONFIG) \
 	--prefix= --host=$(TARGET)
@@ -88,8 +87,15 @@ ifneq ($(NATIVE),)
 HOST:=$(TARGET)
 endif
 
+ifeq ($(BUILD),)
+GUESS = $(shell cd $(GCC_SRCDIR) && ./config.guess)
+TARGET_CANON = $(shell cd $(GCC_SRCDIR) && ./config.sub $(TARGET))
+BUILD = $(GUESS)$(if $(subst $(TARGET_CANON),,$(GUESS)),,xx)
+endif
+
 ifeq ($(HOST),)
 SYSROOT = /$(TARGET)
+FULL_BINUTILS_CONFIG += --build=$(BUILD) --host=$(BUILD)
 FULL_GCC_CONFIG += --with-build-sysroot=$(CURDIR)/obj_sysroot \
 	AR_FOR_TARGET=$(PWD)/obj_binutils/binutils/ar \
 	AS_FOR_TARGET=$(PWD)/obj_binutils/gas/as-new \
@@ -100,6 +106,7 @@ FULL_GCC_CONFIG += --with-build-sysroot=$(CURDIR)/obj_sysroot \
 	RANLIB_FOR_TARGET=$(PWD)/obj_binutils/binutils/ranlib \
 	READELF_FOR_TARGET=$(PWD)/obj_binutils/binutils/readelf \
 	STRIP_FOR_TARGET=$(PWD)/obj_binutils/binutils/strip-new \
+	--build=$(BUILD) --host=$(BUILD) \
 	# end
 FULL_MUSL_CONFIG += CC="$(XGCC)" LIBCC="../obj_gcc/$(TARGET)/libgcc/libgcc.a"
 MUSL_VARS = AR=../obj_binutils/binutils/ar RANLIB=../obj_binutils/binutils/ranlib
@@ -110,8 +117,8 @@ obj_gcc/.lc_built: | obj_sysroot/.lc_libs obj_sysroot/.lc_headers
 obj_gcc/.lc_configured: obj_binutils/.lc_built
 else
 SYSROOT = /
-FULL_BINUTILS_CONFIG += --host=$(HOST)
-FULL_GCC_CONFIG += --host=$(HOST)
+FULL_BINUTILS_CONFIG += --build=$(BUILD) --host=$(HOST)
+FULL_GCC_CONFIG += --build=$(BUILD) --host=$(HOST)
 MUSL_VARS =
 endif
 

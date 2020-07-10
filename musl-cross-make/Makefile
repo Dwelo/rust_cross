@@ -2,13 +2,13 @@
 SOURCES = sources
 
 CONFIG_SUB_REV = 3d5db9ebe860
-BINUTILS_VER = 2.32
-GCC_VER = 8.3.0
-MUSL_VER = 1.1.22
+BINUTILS_VER = 2.33.1
+GCC_VER = 9.2.0
+MUSL_VER = 1.2.0
 GMP_VER = 6.1.2
 MPC_VER = 1.1.0
 MPFR_VER = 4.0.2
-LINUX_VER = 4.4.10
+LINUX_VER = headers-4.19.88
 
 GNU_SITE = https://ftp.gnu.org/pub/gnu
 GCC_SITE = $(GNU_SITE)/gcc
@@ -25,6 +25,9 @@ LINUX_SITE = https://cdn.kernel.org/pub/linux/kernel
 LINUX_HEADERS_SITE = http://ftp.barfooze.de/pub/sabotage/tarballs/
 
 DL_CMD = wget -c -O
+SHA1_CMD = sha1sum -c
+
+COWPATCH = $(CURDIR)/cowpatch.sh
 
 HOST = $(if $(NATIVE),$(TARGET))
 BUILD_DIR = build/$(if $(HOST),$(HOST),local)/$(TARGET)
@@ -74,7 +77,7 @@ $(SOURCES)/config.sub: | $(SOURCES)
 	mkdir -p $@.tmp
 	cd $@.tmp && $(DL_CMD) $(notdir $@) "http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=$(CONFIG_SUB_REV)"
 	cd $@.tmp && touch $(notdir $@)
-	cd $@.tmp && sha1sum -c $(CURDIR)/hashes/$(notdir $@).$(CONFIG_SUB_REV).sha1
+	cd $@.tmp && $(SHA1_CMD) $(CURDIR)/hashes/$(notdir $@).$(CONFIG_SUB_REV).sha1
 	mv $@.tmp/$(notdir $@) $@
 	rm -rf $@.tmp
 
@@ -82,7 +85,7 @@ $(SOURCES)/%: hashes/%.sha1 | $(SOURCES)
 	mkdir -p $@.tmp
 	cd $@.tmp && $(DL_CMD) $(notdir $@) $(SITE)/$(notdir $@)
 	cd $@.tmp && touch $(notdir $@)
-	cd $@.tmp && sha1sum -c $(CURDIR)/hashes/$(notdir $@).sha1
+	cd $@.tmp && $(SHA1_CMD) $(CURDIR)/hashes/$(notdir $@).sha1
 	mv $@.tmp/$(notdir $@) $@
 	rm -rf $@.tmp
 
@@ -97,38 +100,49 @@ musl-git-%:
 	cd $@.tmp && git fsck
 	mv $@.tmp $@
 
-%: $(SOURCES)/%.tar.gz | $(SOURCES)/config.sub
+%.orig: $(SOURCES)/%.tar.gz
+	case "$@" in */*) exit 1 ;; esac
 	rm -rf $@.tmp
 	mkdir $@.tmp
-	( cd $@.tmp && tar zxf - ) < $<
-	test ! -d patches/$@ || cat patches/$@/* | ( cd $@.tmp/$@ && patch -p1 )
-	test ! -f $@.tmp/$@/config.sub || cp -f $(SOURCES)/config.sub $@.tmp/$@
+	( cd $@.tmp && tar zxvf - ) < $<
 	rm -rf $@
-	touch $@.tmp/$@
-	mv $@.tmp/$@ $@
+	touch $@.tmp/$(patsubst %.orig,%,$@)
+	mv $@.tmp/$(patsubst %.orig,%,$@) $@
 	rm -rf $@.tmp
 
-%: $(SOURCES)/%.tar.bz2 | $(SOURCES)/config.sub
+%.orig: $(SOURCES)/%.tar.bz2
+	case "$@" in */*) exit 1 ;; esac
 	rm -rf $@.tmp
 	mkdir $@.tmp
-	( cd $@.tmp && tar jxf - ) < $<
-	test ! -d patches/$@ || cat patches/$@/* | ( cd $@.tmp/$@ && patch -p1 )
-	test ! -f $@.tmp/$@/config.sub || cp -f $(SOURCES)/config.sub $@.tmp/$@
+	( cd $@.tmp && tar jxvf - ) < $<
 	rm -rf $@
-	touch $@.tmp/$@
-	mv $@.tmp/$@ $@
+	touch $@.tmp/$(patsubst %.orig,%,$@)
+	mv $@.tmp/$(patsubst %.orig,%,$@) $@
 	rm -rf $@.tmp
 
-%: $(SOURCES)/%.tar.xz | $(SOURCES)/config.sub
+%.orig: $(SOURCES)/%.tar.xz
+	case "$@" in */*) exit 1 ;; esac
 	rm -rf $@.tmp
 	mkdir $@.tmp
-	( cd $@.tmp && tar Jxf - ) < $<
-	test ! -d patches/$@ || cat patches/$@/* | ( cd $@.tmp/$@ && patch -p1 )
-	test ! -f $@.tmp/$@/config.sub || cp -f $(SOURCES)/config.sub $@.tmp/$@
+	( cd $@.tmp && tar Jxvf - ) < $<
 	rm -rf $@
-	touch $@.tmp/$@
-	mv $@.tmp/$@ $@
+	touch $@.tmp/$(patsubst %.orig,%,$@)
+	mv $@.tmp/$(patsubst %.orig,%,$@) $@
 	rm -rf $@.tmp
+
+%: %.orig | $(SOURCES)/config.sub
+	case "$@" in */*) exit 1 ;; esac
+	rm -rf $@.tmp
+	mkdir $@.tmp
+	( cd $@.tmp && $(COWPATCH) -I ../$< )
+	test ! -d patches/$@ || cat patches/$@/* | ( cd $@.tmp && $(COWPATCH) -p1 )
+	if test -f $</configfsf.sub ; then cs=configfsf.sub ; elif test -f $</config.sub ; then cs=config.sub ; else exit 0 ; fi ; rm -f $@.tmp/$$cs && cp -f $(SOURCES)/config.sub $@.tmp/$$cs && chmod +x $@.tmp/$$cs
+	rm -rf $@
+	mv $@.tmp $@
+
+
+# Add deps for all patched source dirs on their patchsets
+$(foreach dir,$(notdir $(basename $(basename $(basename $(wildcard hashes/*))))),$(eval $(dir): $$(wildcard patches/$(dir) patches/$(dir)/*)))
 
 extract_all: | $(SRC_DIRS)
 
@@ -170,3 +184,5 @@ install: | $(SRC_DIRS) $(BUILD_DIR) $(BUILD_DIR)/Makefile $(BUILD_DIR)/config.ma
 	cd $(BUILD_DIR) && $(MAKE) OUTPUT=$(OUTPUT) $@
 
 endif
+
+.SECONDARY:

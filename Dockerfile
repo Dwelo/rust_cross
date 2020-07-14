@@ -61,6 +61,7 @@ RUN apt-get update && \
 ENV PATH=/home/rust/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 COPY musl-cross-make /root/musl-cross-make/
+COPY config.mak /root/musl-cross-make/config.mak
 RUN echo "Building cross-gcc" && \
     cd ~/musl-cross-make && \
     TARGET=${TARGET_TRIPLE} make -j8 >/dev/null && \

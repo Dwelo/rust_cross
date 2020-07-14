@@ -1,0 +1,25 @@
+on:
+  pull_request:
+  push:
+    branches: master
+
+name: CI
+
+jobs:
+  build_push:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [aarch64, armhf]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: docker/build-push-action@v1
+        with:
+          username: dwelo2
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: dwelo2/rust-musl-crosscompiler
+          tags: ${{ matrix.arch }}
+          build_args: TARGET_ARCH=${{ matrix.arch }}
+          push: ${{ github.ref == 'refs/heads/master' }}

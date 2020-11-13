@@ -81,7 +81,7 @@ RUN echo "Building zlib" && \
 # We point /usr/local/musl/include/linux at some Linux kernel headers (not
 # necessarily the right ones) in an effort to compile OpenSSL 1.1's "engine"
 # component. It's possible that this will cause bizarre and terrible things to
-# happen. There may be "sanitized" header
+# happen.
 RUN echo "Building OpenSSL" && \
     cd ~/openssl-1.1.1?/ && \
     ./Configure -fPIC --cross-compile-prefix=${TARGET_TRIPLE}- \

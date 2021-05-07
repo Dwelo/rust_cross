@@ -72,4 +72,5 @@ GCC_CONFIG += --disable-multilib
 
 # COMMON_CONFIG += --with-debug-prefix-map=$(CURDIR)=
 
-GCC_CONFIG += --with-fpu=vfpv3-d16
+# The following is required for our Raspberry Pi 3 B+ but the litecross Makefile should add it now
+# GCC_CONFIG += --with-fpu=vfp
